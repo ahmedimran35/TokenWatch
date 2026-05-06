@@ -1,0 +1,30 @@
+{
+  "name": "@tokenwatch/tui",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "tokenwatch": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@tokenwatch/collector": "workspace:*",
+    "@tokenwatch/engine": "workspace:*",
+    "@tokenwatch/types": "workspace:*",
+    "ink": "^4",
+    "ink-spinner": "^5",
+    "ink-table": "^3",
+    "react": "^18"
+  },
+  "devDependencies": {
+    "@types/react": "^18",
+    "esbuild": "^0.28.0",
+    "typescript": "^5"
+  }
+}

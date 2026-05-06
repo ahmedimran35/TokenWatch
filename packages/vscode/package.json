@@ -1,0 +1,38 @@
+{
+  "name": "tokenwatch",
+  "displayName": "tokenwatch — Token Meter",
+  "description": "Live Claude Code token usage in your status bar",
+  "version": "0.1.0",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "tokenwatch",
+      "properties": {
+        "tokenwatch.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:57821",
+          "description": "tokenwatch API server URL"
+        },
+        "tokenwatch.refreshIntervalSeconds": {
+          "type": "number",
+          "default": 10,
+          "description": "How often to refresh token stats (seconds)"
+        },
+        "tokenwatch.showCost": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show cost in status bar (vs just token count)"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "tokenwatch.openDashboard",
+        "title": "tokenwatch: Open Dashboard"
+      }
+    ]
+  }
+}

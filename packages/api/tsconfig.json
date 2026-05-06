@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@tokenwatch/types": ["../shared/types/src"],
+      "@tokenwatch/utils": ["../shared/utils/src"],
+      "@tokenwatch/collector": ["../packages/collector/src"],
+      "@tokenwatch/engine": ["../packages/engine/src"]
+    }
+  },
+  "include": ["src"]
+}
