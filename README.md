@@ -9,6 +9,7 @@ Track, analyze, and optimize token usage across Claude Code, Codex, Cursor, GitH
 - **Real-time monitoring** — live burn rate tracking with WebSocket updates
 - **Multi-tool support** — auto-discovers logs from Claude, Codex, Cursor, Copilot, Roo Code, KiloCode
 - **Analytics dashboard** — cost breakdown by project, model, session, and activity
+- **AI cost analytics** — context waste analysis, zombie session detection, session health scoring
 - **Alerts & budgets** — daily/hourly budget limits, burn rate spike detection, session cost alerts
 - **Structured logging** — production-ready Pino JSON logging
 - **Automated backups** — scheduled SQLite backups with 30-day retention
@@ -112,7 +113,30 @@ Data is stored in `~/.tokenwatch/` with SQLite WAL mode.
 | `GET /api/models` | Yes | Model usage breakdown |
 | `GET /api/alerts` | Yes | Active alerts |
 | `GET /api/export` | Yes | Export data (stricter rate limit) |
+| `GET /api/health-insights/waste` | Yes | Context waste analysis |
+| `GET /api/health-insights/zombies` | Yes | Idle/zombie session detection |
+| `GET /api/health-insights/scores` | Yes | Session health scores (0-100) |
 | `WS /ws` | Yes | WebSocket for live updates |
+
+## AI Cost Analytics
+
+TokenWatch identifies wasteful AI sessions with three analysis modes:
+
+### Context Waste Analysis
+Measures input vs output token ratio to find sessions consuming tokens without proportional output. Flags sessions where output/input < 15% as high-waste, ranked by total wasted tokens and cost.
+
+### Zombie Session Detection
+Finds idle sessions (no activity for 30+ minutes) that are still consuming tokens. Classifies into three categories:
+- **idle** — quietly burning tokens via context refresh
+- **context-refresh-spam** — repeatedly refreshing context while idle
+- **likely-loop** — stuck in a loop consuming high tokens during idle period
+
+### Session Health Scores
+Scores every session 0-100 based on output/input ratio, tool usage, cost efficiency, and throughput. Status levels:
+- **Healthy (70+)** — efficient token usage with good output ratio
+- **Average (40-69)** — acceptable but could be optimized
+- **Poor (20-39)** — low efficiency, likely wasting tokens
+- **Stuck (<20)** — near-zero output despite heavy input, possible infinite loop
 
 ## TUI (Terminal UI)
 
@@ -122,7 +146,7 @@ Run a full dashboard right inside your terminal:
 pnpm tokenwatch
 ```
 
-Shows real-time stats, burn rate, sessions, models, alerts, and cache efficiency — no browser needed.
+Shows real-time stats, burn rate, sessions, models, alerts, cache efficiency, context waste analysis, zombie session count, and session health scores — no browser needed.
 
 ## Development
 
