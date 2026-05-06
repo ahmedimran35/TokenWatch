@@ -20,7 +20,8 @@ import { createCacheRouter } from './routes/cache'
 import { createAlertsRouter } from './routes/alerts'
 import { createExportRouter } from './routes/export'
 import { createTeamRouter } from './routes/team'
-import { createToolRoutes } from './routes/tools'
+ import { createToolRoutes } from './routes/tools'
+ import { createHealthRouter } from './routes/health'
 
 interface ApiServerOptions {
   port?: number
@@ -206,7 +207,8 @@ export class ApiServer {
      this.app.use('/api/cache', authMiddleware, standardLimiter, createCacheRouter(this.options.db))
      this.app.use('/api/alerts', authMiddleware, standardLimiter, createAlertsRouter(this.options.db))
      this.app.use('/api/export', authMiddleware, exportLimiter, createExportRouter(this.options.db))
-     this.app.use('/api/tools', authMiddleware, strictLimiter, createToolRoutes(this.options.engine, this.options.db))
+      this.app.use('/api/tools', authMiddleware, strictLimiter, createToolRoutes(this.options.engine, this.options.db))
+      this.app.use('/api/health-insights', authMiddleware, standardLimiter, createHealthRouter(this.options.engine))
 
      const teamSecret = process.env.TOKENWATCH_TEAM_SECRET
      if (teamSecret) {

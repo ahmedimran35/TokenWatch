@@ -76,6 +76,18 @@ export class AnalyticsEngine {
   getBurnRate(windowMinutes?: number) {
     return calculateBurnRate(this.db, windowMinutes)
   }
+
+  getContextWaste(from: Date, to: Date) {
+    return require('./health').getContextWasteReport(this.db, from, to)
+  }
+
+  getZombieSessions(thresholdMinutes?: number) {
+    return require('./health').getZombieSessions(this.db, thresholdMinutes)
+  }
+
+  getSessionHealthScores(from: Date, to: Date) {
+    return require('./health').getSessionHealthScores(this.db, from, to)
+  }
 }
 
 function rowToTokenEvent(r: any): TokenEvent {
@@ -145,3 +157,4 @@ export * from './model-compare'
 export * from './optimize'
 export * from './yield'
 export * from './plan'
+export * from './health'

@@ -19,6 +19,9 @@ import { ForecastCard } from './components/ForecastCard'
 import { ModelCompare } from './components/ModelCompare'
 import { OptimizePanel } from './components/OptimizePanel'
 import { YieldPanel } from './components/YieldPanel'
+import { ContextWastePanel } from './components/ContextWastePanel'
+import { ZombieSessionsPanel } from './components/ZombieSessionsPanel'
+import { SessionHealthPanel } from './components/SessionHealthPanel'
 
 function App() {
   const [period, setPeriod] = useState('7d')
@@ -192,6 +195,13 @@ function App() {
           <YieldPanel data={(yieldData as any)} />
         </div>
       )}
+
+      {/* Health Insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
+        <ContextWastePanel from={from} to={to} />
+        <ZombieSessionsPanel />
+        <SessionHealthPanel from={from} to={to} />
+      </div>
 
       {/* Sessions */}
       <div className="mb-3">

@@ -8,6 +8,9 @@ import {
   getModelStats,
   getProjectStats,
   analyzeYield,
+  getContextWasteReport,
+  getZombieSessions,
+  getSessionHealthScores,
 } from '@tokenwatch/engine'
 
 const PERIODS = ['Today', '7 Days', '30 Days', 'Month'] as const
@@ -96,13 +99,16 @@ interface DashboardData {
   shellCmds: any[]
   yieldResult: any
   providers: string[]
+  contextWaste: any
+  zombieSessions: any[]
+  healthScores: any[]
 }
 
 function PanelContent({ data, period }: { data: DashboardData; period: PeriodKey }) {
   const colWidth = Math.floor((Math.min(process.stdout.columns || 120, 130) - 6) / 2)
   const barWidth = Math.floor(colWidth * 0.35)
 
-  const { stats, activities, models, projects, tools, shellCmds, yieldResult, providers } = data
+  const { stats, activities, models, projects, tools, shellCmds, yieldResult, providers, contextWaste, zombieSessions, healthScores } = data
 
   const activityColorMap: Record<string, string> = {
     Coding: 'cyan',
@@ -288,7 +294,56 @@ function PanelContent({ data, period }: { data: DashboardData; period: PeriodKey
         </>
       )}
 
-      {/* Row 5: Tools + Shell (if no Yield) */}
+      {/* Row 5: Health Insights */}
+      {contextWaste && (
+        <>
+          <Box>
+            <Panel title="Context Waste" color="orange" width={colWidth}>
+              <Text color="orange">  Waste: {Math.round(contextWaste.wastePercentage || 0)}%</Text>
+              <Text color="gray">  Input:  {fmt(contextWaste.totalInputTokens || 0)}</Text>
+              <Text color="gray">  Output: {fmt(contextWaste.totalOutputTokens || 0)}</Text>
+              <Text color="red">  Wasted: {fmt(contextWaste.totalWastedTokens || 0)} tokens</Text>
+              {contextWaste.sessionsWithHighWaste && contextWaste.sessionsWithHighWaste.length > 0 && (
+                <>
+                  <Text color="gray">{'─'.repeat(colWidth - 4)}</Text>
+                  {contextWaste.sessionsWithHighWaste.slice(0, 3).map((s: any, i: number) => (
+                    <Text key={s.sessionId} color="gray">  #{i + 1} {s.projectName?.slice(0, 12) || 'unknown'} ({fmt(s.wastedTokens)} tokens)</Text>
+                  ))}
+                </>
+              )}
+            </Panel>
+            <Box width={2} />
+            <Panel title="Session Health" color="magenta" width={colWidth}>
+              {healthScores && healthScores.length > 0 ? (
+                <>
+                  {(() => {
+                    const healthy = healthScores.filter((s: any) => s.status === 'healthy').length
+                    const avg = healthScores.filter((s: any) => s.status === 'average').length
+                    const poor = healthScores.filter((s: any) => s.status === 'poor').length
+                    const stuck = healthScores.filter((s: any) => s.status === 'stuck').length
+                    const avgScore = Math.round(healthScores.reduce((a: number, b: any) => a + b.score, 0) / healthScores.length)
+                    return (
+                      <>
+                        <Text color="green">  ● Healthy:  {healthy}</Text>
+                        <Text color="yellow">  ● Average:  {avg}</Text>
+                        <Text color="orange">  ● Poor:     {poor}</Text>
+                        <Text color="red">  ● Stuck:    {stuck}</Text>
+                        <Text color="gray">{'─'.repeat(colWidth - 4)}</Text>
+                        <Text color="gray">  Avg Score: {avgScore}/100</Text>
+                      </>
+                    )
+                  })()}
+                </>
+              ) : (
+                <Text color="gray">  No health data (needs input tokens)</Text>
+              )}
+            </Panel>
+          </Box>
+          <Box height={1} />
+        </>
+      )}
+
+      {/* Row 6: Tools + Shell (if no Yield) */}
       {!yieldResult && (
         <Box>
           <Panel title="Core Tools" color="cyan" width={colWidth}>
@@ -421,7 +476,11 @@ export default function App({ db }: { db: Database }) {
       .all()
       .map((r: any) => r.provider)
 
-    setData({ stats, burnRate, activities, models, projects, tools, shellCmds, yieldResult, providers })
+    const contextWaste = getContextWasteReport(db, dates.from, dates.to)
+    const zombieSessions = getZombieSessions(db, 30)
+    const healthScores = getSessionHealthScores(db, dates.from, dates.to)
+
+    setData({ stats, burnRate, activities, models, projects, tools, shellCmds, yieldResult, providers, contextWaste, zombieSessions, healthScores })
     setLoading(false)
   }, [db, period])
 
@@ -462,7 +521,7 @@ export default function App({ db }: { db: Database }) {
 
   if (!data) return null
 
-  const { stats } = data
+  const { stats, zombieSessions } = data
   const screenW = Math.min(process.stdout.columns || 120, 130)
 
   return (
@@ -501,6 +560,12 @@ export default function App({ db }: { db: Database }) {
         <Text color="gray">{fmt(stats.totalTokens)} tokens  </Text>
         <Text color="gray">{stats.sessionCount} sessions  </Text>
         <Text color="gray">{(stats.cacheHitRate * 100).toFixed(0)}% cache</Text>
+        {zombieSessions && zombieSessions.length > 0 && (
+          <>
+            <Text color="gray">  </Text>
+            <Text color="red" bold>⚠ {zombieSessions.length} zombie</Text>
+          </>
+        )}
         <Text color="gray">{' '.repeat(Math.max(2, screenW - 80))}</Text>
       </Box>
       <Box>
