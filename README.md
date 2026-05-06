@@ -114,6 +114,16 @@ Data is stored in `~/.tokenwatch/` with SQLite WAL mode.
 | `GET /api/export` | Yes | Export data (stricter rate limit) |
 | `WS /ws` | Yes | WebSocket for live updates |
 
+## TUI (Terminal UI)
+
+Run a full dashboard right inside your terminal:
+
+```bash
+pnpm tokenwatch
+```
+
+Shows real-time stats, burn rate, sessions, models, alerts, and cache efficiency — no browser needed.
+
 ## Development
 
 ```bash
