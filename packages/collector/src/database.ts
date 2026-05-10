@@ -93,6 +93,15 @@ const MIGRATIONS = [
       CREATE INDEX IF NOT EXISTS idx_sessions_started ON sessions(started_at);
     `,
   },
+  {
+    version: 2,
+    sql: `
+      CREATE INDEX IF NOT EXISTS idx_events_provider ON token_events(provider);
+      CREATE INDEX IF NOT EXISTS idx_events_model ON token_events(model);
+      CREATE INDEX IF NOT EXISTS idx_sessions_ended ON sessions(ended_at);
+      CREATE INDEX IF NOT EXISTS idx_alerts_acknowledged ON alert_events(acknowledged, triggered_at);
+    `,
+  },
 ]
 
 export class Database {

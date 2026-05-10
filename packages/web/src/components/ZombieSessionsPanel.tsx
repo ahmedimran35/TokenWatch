@@ -13,7 +13,11 @@ function formatTokens(n: number): string {
 export function ZombieSessionsPanel() {
   const { data: zombies, isLoading } = useZombieSessions(30)
 
-  if (isLoading || !zombies || zombies.length === 0) return null
+  if (isLoading) {
+    return <div className="animate-pulse h-32 bg-gray-800 rounded border border-yellow-500/30" />
+  }
+
+  if (!zombies || zombies.length === 0) return null
 
   const statusColors: Record<string, string> = {
     'idle': 'bg-yellow-900/50 text-yellow-400',

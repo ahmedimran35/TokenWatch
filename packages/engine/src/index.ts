@@ -1,9 +1,13 @@
 import { Database } from './database'
 import type { LiveStats, TokenEvent, Session, Alert } from '@tokenwatch/types'
-import { calculateBurnRate } from './burn-rate'
+import { calculateBurnRate, getBurnRateHistory } from './burn-rate'
 import { getToday, getThisMonth } from './aggregator'
-import { getTopSessions } from './session-ranker'
+import { getTopSessions, getSessionTimeline } from './session-ranker'
 import { evaluateAlerts, loadAlertConfig } from './alert-evaluator'
+import { getProjectStats } from './project-stats'
+import { getModelStats } from './model-stats'
+import { getCacheStats } from './cache-stats'
+import { getContextWasteReport, getZombieSessions, getSessionHealthScores } from './health'
 
 export class AnalyticsEngine {
   private db: Database
@@ -61,12 +65,12 @@ export class AnalyticsEngine {
   }
 
   getStats = getToday
-  getProjectStats = require('./project-stats').getProjectStats
-  getModelStats = require('./model-stats').getModelStats
+  getProjectStats = getProjectStats
+  getModelStats = getModelStats
   getTopSessions = getTopSessions
-  getSessionTimeline = require('./session-ranker').getSessionTimeline
-  getCacheStats = require('./cache-stats').getCacheStats
-  getBurnRateHistory = require('./burn-rate').getBurnRateHistory
+  getSessionTimeline = getSessionTimeline
+  getCacheStats = getCacheStats
+  getBurnRateHistory = getBurnRateHistory
 
   evaluateAlerts(): Alert[] {
     const config = loadAlertConfig()
@@ -78,15 +82,15 @@ export class AnalyticsEngine {
   }
 
   getContextWaste(from: Date, to: Date) {
-    return require('./health').getContextWasteReport(this.db, from, to)
+    return getContextWasteReport(this.db, from, to)
   }
 
   getZombieSessions(thresholdMinutes?: number) {
-    return require('./health').getZombieSessions(this.db, thresholdMinutes)
+    return getZombieSessions(this.db, thresholdMinutes)
   }
 
   getSessionHealthScores(from: Date, to: Date) {
-    return require('./health').getSessionHealthScores(this.db, from, to)
+    return getSessionHealthScores(this.db, from, to)
   }
 }
 
