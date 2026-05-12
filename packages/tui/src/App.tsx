@@ -132,17 +132,13 @@ function PanelContent({ data, period }: { data: DashboardData; period: PeriodKey
     <Box flexDirection="column">
       {/* Row 1: Active Providers */}
       {providers.length > 0 && (
-        <>
-          <Box>
-            <Panel title="Active Providers" color="green" width={colWidth}>
-              {providers.map((p: string, i: number) => (
-                <Text key={p} color="green">  ● {p}</Text>
-              ))}
-              {providers.length === 0 && <Text color="gray">  No providers detected</Text>}
-            </Panel>
-          </Box>
-          <Box height={1} />
-        </>
+        <Box>
+          <Panel title="Active Providers" color="green" width={colWidth}>
+            {providers.map((p: string, i: number) => (
+              <Text key={p} color="green">  ● {p}</Text>
+            ))}
+          </Panel>
+        </Box>
       )}
 
       {/* Row 2: Daily Activity + By Project */}
@@ -257,93 +253,41 @@ function PanelContent({ data, period }: { data: DashboardData; period: PeriodKey
 
       <Box height={1} />
 
-      {/* Row 4: Yield Analysis */}
+      {/* Row 4: Yield Analysis + Core Tools */}
       {yieldResult && (
-        <>
-          <Box>
-            <Panel title="Yield Analysis" color="cyan" width={colWidth}>
-              <Text color="green">  ● Productive:  {yieldResult.productive.sessions} sessions ({fmtCost(yieldResult.productive.costUsd)})</Text>
-              <Text color="yellow">  ● Reverted:    {yieldResult.reverted.sessions} sessions ({fmtCost(yieldResult.reverted.costUsd)})</Text>
-              <Text color="red">  ● Abandoned:   {yieldResult.abandoned.sessions} sessions ({fmtCost(yieldResult.abandoned.costUsd)})</Text>
-              <Text color="gray">{'─'.repeat(colWidth - 4)}</Text>
-              <Text color="gray">  Total: {fmtCost(yieldResult.totalCostUsd)} · {fmt(yieldResult.totalTokens)} tokens</Text>
-            </Panel>
-            <Box width={2} />
-            <Panel title="Core Tools" color="cyan" width={colWidth}>
-              {tools.slice(0, 10).map((t: any, i: number) => {
-                const maxCalls = safeMax(tools.map((x: any) => x.calls), 1)
-                const pct = t.calls / maxCalls
-                const color = toolColors[i % toolColors.length]
-                const barLen = Math.max(1, Math.round(pct * (barWidth - 2)))
-                const bar = '█'.repeat(barLen) + ' '.repeat(barWidth - 2 - barLen)
-                const name = (t.tool || '').slice(0, 14)
-                return (
-                  <Box key={t.tool}>
-                    <Text color={color}>{name.padEnd(14)}</Text>
-                    <Text color={color}> </Text>
-                    <Text color={color}>{bar}</Text>
-                    <Text color="gray">  </Text>
-                    <Text color="gray">{String(t.calls).padStart(5)}</Text>
-                  </Box>
-                )
-              })}
-              {tools.length === 0 && <Text color="gray">  No data</Text>}
-            </Panel>
-          </Box>
-          <Box height={1} />
-        </>
+        <Box>
+          <Panel title="Yield Analysis" color="cyan" width={colWidth}>
+            <Text color="green">  ● Productive:  {yieldResult.productive.sessions} sessions ({fmtCost(yieldResult.productive.costUsd)})</Text>
+            <Text color="yellow">  ● Reverted:    {yieldResult.reverted.sessions} sessions ({fmtCost(yieldResult.reverted.costUsd)})</Text>
+            <Text color="red">  ● Abandoned:   {yieldResult.abandoned.sessions} sessions ({fmtCost(yieldResult.abandoned.costUsd)})</Text>
+            <Text color="gray">{'─'.repeat(colWidth - 4)}</Text>
+            <Text color="gray">  Total: {fmtCost(yieldResult.totalCostUsd)} · {fmt(yieldResult.totalTokens)} tokens</Text>
+          </Panel>
+          <Box width={2} />
+          <Panel title="Core Tools" color="cyan" width={colWidth}>
+            {tools.slice(0, 10).map((t: any, i: number) => {
+              const maxCalls = safeMax(tools.map((x: any) => x.calls), 1)
+              const pct = t.calls / maxCalls
+              const color = toolColors[i % toolColors.length]
+              const barLen = Math.max(1, Math.round(pct * (barWidth - 2)))
+              const bar = '█'.repeat(barLen) + ' '.repeat(barWidth - 2 - barLen)
+              const name = (t.tool || '').slice(0, 14)
+              return (
+                <Box key={t.tool}>
+                  <Text color={color}>{name.padEnd(14)}</Text>
+                  <Text color={color}> </Text>
+                  <Text color={color}>{bar}</Text>
+                  <Text color="gray">  </Text>
+                  <Text color="gray">{String(t.calls).padStart(5)}</Text>
+                </Box>
+              )
+            })}
+            {tools.length === 0 && <Text color="gray">  No data</Text>}
+          </Panel>
+        </Box>
       )}
 
-      {/* Row 5: Health Insights */}
-      {contextWaste && (
-        <>
-          <Box>
-            <Panel title="Context Waste" color="orange" width={colWidth}>
-              <Text color="orange">  Waste: {Math.round(contextWaste.wastePercentage || 0)}%</Text>
-              <Text color="gray">  Input:  {fmt(contextWaste.totalInputTokens || 0)}</Text>
-              <Text color="gray">  Output: {fmt(contextWaste.totalOutputTokens || 0)}</Text>
-              <Text color="red">  Wasted: {fmt(contextWaste.totalWastedTokens || 0)} tokens</Text>
-              {contextWaste.sessionsWithHighWaste && contextWaste.sessionsWithHighWaste.length > 0 && (
-                <>
-                  <Text color="gray">{'─'.repeat(colWidth - 4)}</Text>
-                  {contextWaste.sessionsWithHighWaste.slice(0, 3).map((s: any, i: number) => (
-                    <Text key={s.sessionId} color="gray">  #{i + 1} {s.projectName?.slice(0, 12) || 'unknown'} ({fmt(s.wastedTokens)} tokens)</Text>
-                  ))}
-                </>
-              )}
-            </Panel>
-            <Box width={2} />
-            <Panel title="Session Health" color="magenta" width={colWidth}>
-              {healthScores && healthScores.length > 0 ? (
-                <>
-                  {(() => {
-                    const healthy = healthScores.filter((s: any) => s.status === 'healthy').length
-                    const avg = healthScores.filter((s: any) => s.status === 'average').length
-                    const poor = healthScores.filter((s: any) => s.status === 'poor').length
-                    const stuck = healthScores.filter((s: any) => s.status === 'stuck').length
-                    const avgScore = Math.round(healthScores.reduce((a: number, b: any) => a + b.score, 0) / healthScores.length)
-                    return (
-                      <>
-                        <Text color="green">  ● Healthy:  {healthy}</Text>
-                        <Text color="yellow">  ● Average:  {avg}</Text>
-                        <Text color="orange">  ● Poor:     {poor}</Text>
-                        <Text color="red">  ● Stuck:    {stuck}</Text>
-                        <Text color="gray">{'─'.repeat(colWidth - 4)}</Text>
-                        <Text color="gray">  Avg Score: {avgScore}/100</Text>
-                      </>
-                    )
-                  })()}
-                </>
-              ) : (
-                <Text color="gray">  No health data (needs input tokens)</Text>
-              )}
-            </Panel>
-          </Box>
-          <Box height={1} />
-        </>
-      )}
-
-      {/* Row 6: Tools + Shell (if no Yield) */}
+      {/* Row 5: Shell Commands + Zombie Sessions */}
       {!yieldResult && (
         <Box>
           <Panel title="Core Tools" color="cyan" width={colWidth}>
@@ -366,9 +310,7 @@ function PanelContent({ data, period }: { data: DashboardData; period: PeriodKey
             })}
             {tools.length === 0 && <Text color="gray">  No data</Text>}
           </Panel>
-
           <Box width={2} />
-
           <Panel title="Shell Commands" color="orange" width={colWidth}>
             {shellCmds.slice(0, 10).map((s: any, i: number) => {
               const maxCalls = safeMax(shellCmds.map((x: any) => x.calls), 1)
@@ -390,6 +332,208 @@ function PanelContent({ data, period }: { data: DashboardData; period: PeriodKey
             {shellCmds.length === 0 && <Text color="gray">  No data</Text>}
           </Panel>
         </Box>
+      )}
+
+      {/* Row 6: Shell Commands row (if yield present) + Zombie if yield present */}
+      {yieldResult && (
+        <Box>
+          <Panel title="Shell Commands" color="orange" width={colWidth}>
+            {shellCmds.slice(0, 10).map((s: any, i: number) => {
+              const maxCalls = safeMax(shellCmds.map((x: any) => x.calls), 1)
+              const pct = s.calls / maxCalls
+              const color = toolColors[i % toolColors.length]
+              const barLen = Math.max(1, Math.round(pct * (barWidth - 2)))
+              const bar = '█'.repeat(barLen) + ' '.repeat(barWidth - 2 - barLen)
+              const name = (s.command || '').slice(0, 14)
+              return (
+                <Box key={s.command}>
+                  <Text color={color}>{name.padEnd(14)}</Text>
+                  <Text color={color}> </Text>
+                  <Text color={color}>{bar}</Text>
+                  <Text color="gray">  </Text>
+                  <Text color="gray">{String(s.calls).padStart(5)}</Text>
+                </Box>
+              )
+            })}
+            {shellCmds.length === 0 && <Text color="gray">  No data</Text>}
+          </Panel>
+          <Box width={2} />
+          <Panel title="Zombie Sessions" color="red" width={colWidth}>
+            {zombieSessions.length > 0 ? (
+              zombieSessions.slice(0, 5).map((z: any) => {
+                const statusColors: Record<string, string> = {
+                  'idle': 'yellow',
+                  'likely-loop': 'red',
+                  'context-refresh-spam': 'orange',
+                }
+                return (
+                  <Box key={z.sessionId} flexDirection="column">
+                    <Box>
+                      <Text color={statusColors[z.status] || 'gray'}>{'●'}</Text>
+                      <Text color="gray">  </Text>
+                      <Text color="gray">{z.projectName?.slice(0, 14) || 'unknown'}</Text>
+                      <Text color="gray">  </Text>
+                      <Text color="red">{fmtCost(z.costDuringIdle)}</Text>
+                    </Box>
+                    <Box>
+                      <Text color="gray">  Idle {z.idleMinutes}m · {fmt(z.tokensDuringIdle)} tokens</Text>
+                    </Box>
+                  </Box>
+                )
+              })
+            ) : (
+              <Text color="gray">  No zombie sessions</Text>
+            )}
+          </Panel>
+        </Box>
+      )}
+
+      {/* Row 7: Zombie + Shell when no yield */}
+      {!yieldResult && zombieSessions.length > 0 && (
+        <Box>
+          <Panel title="Zombie Sessions" color="red" width={colWidth}>
+            {zombieSessions.slice(0, 5).map((z: any) => {
+              const statusColors: Record<string, string> = {
+                'idle': 'yellow',
+                'likely-loop': 'red',
+                'context-refresh-spam': 'orange',
+              }
+              return (
+                <Box key={z.sessionId} flexDirection="column">
+                  <Box>
+                    <Text color={statusColors[z.status] || 'gray'}>{'●'}</Text>
+                    <Text color="gray">  </Text>
+                    <Text color="gray">{z.projectName?.slice(0, 14) || 'unknown'}</Text>
+                    <Text color="gray">  </Text>
+                    <Text color="red">{fmtCost(z.costDuringIdle)}</Text>
+                  </Box>
+                  <Box>
+                    <Text color="gray">  Idle {z.idleMinutes}m · {fmt(z.tokensDuringIdle)} tokens</Text>
+                  </Box>
+                </Box>
+              )
+            })}
+          </Panel>
+          <Box width={2} />
+          <Panel title="Health Insights" color="magenta" width={colWidth}>
+            <Text color="orange">  Context waste: {Math.round(contextWaste.wastePercentage || 0)}%</Text>
+            <Text color="gray">  Wasted: {fmt(contextWaste.totalWastedTokens || 0)} tokens</Text>
+            {healthScores && healthScores.length > 0 && (
+              <>
+                <Text color="gray">{'─'.repeat(colWidth - 4)}</Text>
+                <Text color="green">  Healthy: {healthScores.filter((s: any) => s.status === 'healthy').length}</Text>
+                <Text color="red">  Stuck:   {healthScores.filter((s: any) => s.status === 'stuck').length}</Text>
+              </>
+            )}
+          </Panel>
+        </Box>
+      )}
+
+      {/* Row 8: Health Insights (when yield present) */}
+      {contextWaste && (yieldResult || zombieSessions.length > 0) && (
+        <>
+          {yieldResult && (
+            <Box>
+              <Panel title="Zombie Sessions" color="red" width={colWidth}>
+                {zombieSessions.length > 0 ? (
+                  zombieSessions.slice(0, 5).map((z: any) => {
+                    const statusColors: Record<string, string> = {
+                      'idle': 'yellow',
+                      'likely-loop': 'red',
+                      'context-refresh-spam': 'orange',
+                    }
+                    return (
+                      <Box key={z.sessionId} flexDirection="column">
+                        <Box>
+                          <Text color={statusColors[z.status] || 'gray'}>{'●'}</Text>
+                          <Text color="gray">  </Text>
+                          <Text color="gray">{z.projectName?.slice(0, 14) || 'unknown'}</Text>
+                          <Text color="gray">  </Text>
+                          <Text color="red">{fmtCost(z.costDuringIdle)}</Text>
+                        </Box>
+                        <Box>
+                          <Text color="gray">  Idle {z.idleMinutes}m · {fmt(z.tokensDuringIdle)} tokens</Text>
+                        </Box>
+                      </Box>
+                    )
+                  })
+                ) : (
+                  <Text color="gray">  No zombie sessions</Text>
+                )}
+              </Panel>
+              <Box width={2} />
+              <Panel title="Session Health" color="magenta" width={colWidth}>
+                {healthScores && healthScores.length > 0 ? (
+                  <>
+                    {(() => {
+                      const healthy = healthScores.filter((s: any) => s.status === 'healthy').length
+                      const avg = healthScores.filter((s: any) => s.status === 'average').length
+                      const poor = healthScores.filter((s: any) => s.status === 'poor').length
+                      const stuck = healthScores.filter((s: any) => s.status === 'stuck').length
+                      const avgScore = Math.round(healthScores.reduce((a: number, b: any) => a + b.score, 0) / healthScores.length)
+                      return (
+                        <>
+                          <Text color="green">  ● Healthy:  {healthy}</Text>
+                          <Text color="yellow">  ● Average:  {avg}</Text>
+                          <Text color="orange">  ● Poor:     {poor}</Text>
+                          <Text color="red">  ● Stuck:    {stuck}</Text>
+                          <Text color="gray">{'─'.repeat(colWidth - 4)}</Text>
+                          <Text color="gray">  Avg Score: {avgScore}/100</Text>
+                        </>
+                      )
+                    })()}
+                  </>
+                ) : (
+                  <Text color="gray">  No health data (needs input tokens)</Text>
+                )}
+              </Panel>
+            </Box>
+          )}
+          {!yieldResult && zombieSessions.length === 0 && (
+            <Box>
+              <Panel title="Context Waste" color="orange" width={colWidth}>
+                <Text color="orange">  Waste: {Math.round(contextWaste.wastePercentage || 0)}%</Text>
+                <Text color="gray">  Input:  {fmt(contextWaste.totalInputTokens || 0)}</Text>
+                <Text color="gray">  Output: {fmt(contextWaste.totalOutputTokens || 0)}</Text>
+                <Text color="red">  Wasted: {fmt(contextWaste.totalWastedTokens || 0)} tokens</Text>
+                {contextWaste.sessionsWithHighWaste && contextWaste.sessionsWithHighWaste.length > 0 && (
+                  <>
+                    <Text color="gray">{'─'.repeat(colWidth - 4)}</Text>
+                    {contextWaste.sessionsWithHighWaste.slice(0, 3).map((s: any, i: number) => (
+                      <Text key={s.sessionId} color="gray">  #{i + 1} {s.projectName?.slice(0, 12) || 'unknown'} ({fmt(s.wastedTokens)} tokens)</Text>
+                    ))}
+                  </>
+                )}
+              </Panel>
+              <Box width={2} />
+              <Panel title="Session Health" color="magenta" width={colWidth}>
+                {healthScores && healthScores.length > 0 ? (
+                  <>
+                    {(() => {
+                      const healthy = healthScores.filter((s: any) => s.status === 'healthy').length
+                      const avg = healthScores.filter((s: any) => s.status === 'average').length
+                      const poor = healthScores.filter((s: any) => s.status === 'poor').length
+                      const stuck = healthScores.filter((s: any) => s.status === 'stuck').length
+                      const avgScore = Math.round(healthScores.reduce((a: number, b: any) => a + b.score, 0) / healthScores.length)
+                      return (
+                        <>
+                          <Text color="green">  ● Healthy:  {healthy}</Text>
+                          <Text color="yellow">  ● Average:  {avg}</Text>
+                          <Text color="orange">  ● Poor:     {poor}</Text>
+                          <Text color="red">  ● Stuck:    {stuck}</Text>
+                          <Text color="gray">{'─'.repeat(colWidth - 4)}</Text>
+                          <Text color="gray">  Avg Score: {avgScore}/100</Text>
+                        </>
+                      )
+                    })()}
+                  </>
+                ) : (
+                  <Text color="gray">  No health data (needs input tokens)</Text>
+                )}
+              </Panel>
+            </Box>
+          )}
+        </>
       )}
     </Box>
   )

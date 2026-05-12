@@ -4,7 +4,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "tokenwatch": "./dist/index.js"
+    "tokenwatch-tui": "./dist/index.js"
   },
   "scripts": {
     "build": "node build.mjs",
@@ -26,5 +26,6 @@
     "@types/react": "^18",
     "esbuild": "^0.28.0",
     "typescript": "^5"
-  }
+  },
+  "private": true
 }

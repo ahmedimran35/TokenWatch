@@ -1,54 +1,5 @@
 import type { Database } from './database'
-
-export interface ContextWasteReport {
-  totalInputTokens: number
-  totalOutputTokens: number
-  totalWastedTokens: number
-  totalWastedCostUsd: number
-  wastePercentage: number
-  sessionsWithHighWaste: Array<{
-    sessionId: string
-    projectPath: string
-    projectName: string
-    inputTokens: number
-    outputTokens: number
-    wastedTokens: number
-    wastedCostUsd: number
-    wasteRatio: number
-  }>
-}
-
-export interface SessionHealthScore {
-  sessionId: string
-  projectPath: string
-  projectName: string
-  score: number
-  status: 'healthy' | 'average' | 'poor' | 'stuck'
-  totalCostUsd: number
-  totalInputTokens: number
-  totalOutputTokens: number
-  outputInputRatio: number
-  toolUseRate: number
-  durationMs: number
-  eventCount: number
-  flags: string[]
-}
-
-export interface ZombieSession {
-  sessionId: string
-  projectPath: string
-  projectName: string
-  provider: string
-  startedAt: string
-  lastActivityAt: string
-  idleMinutes: number
-  tokensDuringIdle: number
-  costDuringIdle: number
-  totalTokens: number
-  totalCostUsd: number
-  status: 'idle' | 'likely-loop' | 'context-refresh-spam'
-  recommendation: string
-}
+import type { ContextWasteReport, SessionHealthScore, ZombieSession } from '@tokenwatch/types'
 
 export function getContextWasteReport(db: Database, from: Date, to: Date): ContextWasteReport {
   const sqliteDb = db.getDatabase()

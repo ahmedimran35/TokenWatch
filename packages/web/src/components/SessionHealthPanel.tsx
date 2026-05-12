@@ -17,10 +17,6 @@ function scoreColor(score: number): string {
   return 'bg-red-500'
 }
 
-function statusLabel(status: string): string {
-  return status.charAt(0).toUpperCase() + status.slice(1)
-}
-
 export function SessionHealthPanel({ from, to }: { from: Date; to: Date }) {
   const { data: scores, isLoading } = useSessionHealthScores(from, to)
 
@@ -82,10 +78,11 @@ export function SessionHealthPanel({ from, to }: { from: Date; to: Date }) {
                 </div>
               ))}
           </div>
-          {scores
-            .filter((s: any) => s.flags && s.flags.length > 0)
-            .slice(0, 5)
-            .map((s: any) => (
+            {scores
+              .filter((s: any) => s.status === 'poor' || s.status === 'stuck')
+              .filter((s: any) => s.flags && s.flags.length > 0)
+              .slice(0, 5)
+              .map((s: any) => (
               s.flags.map((flag: string, i: number) => (
                 <div key={`${s.sessionId}-${i}`} className="text-xs text-orange-300 mt-0.5 italic truncate">{flag}</div>
               ))
