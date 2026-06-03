@@ -35,46 +35,54 @@ export class CollectorWatcher {
     this.providers.push(config)
   }
 
-  async start(): Promise<void> {
-    this.autoDiscoverProviders()
+   async start(): Promise<void> {
+     this.autoDiscoverProviders()
 
-    if (this.providers.length === 0) return
+     if (this.providers.length === 0) return
 
-    // Start watchers for each provider
-    for (const provider of this.providers) {
-      const watcher = chokidar.watch(provider.filePattern, {
-        cwd: provider.watchDir,
-        persistent: true,
-        ignoreInitial: true,
-        awaitWriteFinish: { stabilityThreshold: 200 },
-        followSymlinks: false,
-      })
+     // Start watchers for each provider
+     for (const provider of this.providers) {
+       try {
+         const watcher = chokidar.watch(provider.filePattern, {
+           cwd: provider.watchDir,
+           persistent: true,
+           ignoreInitial: true,
+           awaitWriteFinish: { stabilityThreshold: 200 },
+           followSymlinks: false,
+         })
 
-      watcher.on('add', (relativePath) => {
-        const fullPath = path.join(provider.watchDir, relativePath)
-        this.processFile(provider, fullPath)
-      })
+         watcher.on('add', (relativePath) => {
+           const fullPath = path.join(provider.watchDir, relativePath)
+           this.processFile(provider, fullPath)
+         })
 
-      watcher.on('change', (relativePath) => {
-        const fullPath = path.join(provider.watchDir, relativePath)
-        this.processFile(provider, fullPath)
-      })
+         watcher.on('change', (relativePath) => {
+           const fullPath = path.join(provider.watchDir, relativePath)
+           this.processFile(provider, fullPath)
+         })
 
-       watcher.on('error', (error) => {
-         logger.error({ provider: provider.name, error }, 'Watcher error')
-       })
+          watcher.on('error', (error) => {
+            logger.error({ provider: provider.name, error }, 'Watcher error')
+          })
 
-       this.watchers.push(watcher)
+          this.watchers.push(watcher)
 
-       // Process existing files (respect watcher_state for crash recovery)
-       const files = this.findExistingFiles(provider)
-       logger.info({ provider: provider.name, count: files.length }, 'Found existing files')
-       for (const file of files) {
-         logger.debug({ provider: provider.name, file }, 'Processing existing file')
-         this.processFile(provider, file)
+          // Process existing files (respect watcher_state for crash recovery)
+          const files = this.findExistingFiles(provider)
+          logger.info({ provider: provider.name, count: files.length }, 'Found existing files')
+          for (const file of files) {
+            logger.debug({ provider: provider.name, file }, 'Processing existing file')
+            try {
+              this.processFile(provider, file)
+            } catch (err) {
+              logger.error({ provider: provider.name, file, err }, 'Failed to process file on startup, skipping')
+            }
+          }
+       } catch (err) {
+         logger.error({ provider: provider.name, err }, 'Failed to start watcher for provider')
        }
-    }
-  }
+     }
+   }
 
   private autoDiscoverProviders(): void {
     // Claude Code (default)
@@ -263,9 +271,7 @@ export class CollectorWatcher {
 
        this.processFromPosition(provider, filePath, startPosition, stats.size)
      } catch (error) {
-       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-         logger.error({ filePath, error }, 'Error processing file')
-       }
+       logger.error({ filePath, error }, 'Error processing file, skipping')
      }
   }
 
@@ -285,18 +291,67 @@ export class CollectorWatcher {
 
     if (filePath.endsWith('.json')) {
       // JSON file - parse as whole
-      const event = provider.parse(content, filePath)
-      if (event) {
-        const eventTime = event.timestamp instanceof Date ? event.timestamp : new Date(event.timestamp)
-        if (isNaN(eventTime.getTime())) return
+      try {
+        const event = provider.parse(content, filePath)
+        if (event) {
+          const eventTime = event.timestamp instanceof Date ? event.timestamp : new Date(event.timestamp)
+          if (isNaN(eventTime.getTime())) return
 
-        if (!this.deduplicator.isDuplicate({
-          provider: provider.name,
-          sessionId: event.sessionId,
-          timestamp: eventTime.toISOString(),
-          inputTokens: event.inputTokens,
-          outputTokens: event.outputTokens,
-        })) {
+          if (!this.deduplicator.isDuplicate({
+            provider: provider.name,
+            sessionId: event.sessionId,
+            timestamp: eventTime.toISOString(),
+            inputTokens: event.inputTokens,
+            outputTokens: event.outputTokens,
+          })) {
+            const inserted = this.db.insertEvent(event)
+            if (inserted) {
+              this.updateSession(event)
+            }
+            this.deduplicator.record({
+              provider: provider.name,
+              sessionId: event.sessionId,
+              timestamp: eventTime.toISOString(),
+              inputTokens: event.inputTokens,
+              outputTokens: event.outputTokens,
+              cumulativeOutputTokens: (event as any).cumulativeOutputTokens,
+              rawMessageId: (event as any).rawMessageId,
+              bubbleId: (event as any).bubbleId,
+              conversationId: (event as any).conversationId,
+              responseId: (event as any).responseId,
+            })
+            if (this.onEvent) this.onEvent(event)
+          }
+        }
+      } catch (err) {
+        logger.error({ provider: provider.name, filePath, err }, 'Error parsing JSON file, skipping')
+      }
+    } else {
+      // JSONL file - parse line by line
+      const lines = content.split('\n').filter((line) => line.trim().length > 0)
+
+      for (const line of lines) {
+        try {
+          const event = provider.parse(line, filePath)
+          if (!event) continue
+
+          const eventTime = event.timestamp instanceof Date ? event.timestamp : new Date(event.timestamp)
+          if (isNaN(eventTime.getTime())) continue
+
+          if (this.deduplicator.isDuplicate({
+            provider: provider.name,
+            sessionId: event.sessionId,
+            timestamp: eventTime.toISOString(),
+            inputTokens: event.inputTokens,
+            outputTokens: event.outputTokens,
+            rawMessageId: (event as any).rawMessageId,
+            bubbleId: (event as any).bubbleId,
+            conversationId: (event as any).conversationId,
+            responseId: (event as any).responseId,
+          })) {
+            continue
+          }
+
           const inserted = this.db.insertEvent(event)
           if (inserted) {
             this.updateSession(event)
@@ -313,53 +368,13 @@ export class CollectorWatcher {
             conversationId: (event as any).conversationId,
             responseId: (event as any).responseId,
           })
-          if (this.onEvent) this.onEvent(event)
-        }
-      }
-    } else {
-      // JSONL file - parse line by line
-      const lines = content.split('\n').filter((line) => line.trim().length > 0)
 
-      for (const line of lines) {
-        const event = provider.parse(line, filePath)
-        if (!event) continue
-
-        const eventTime = event.timestamp instanceof Date ? event.timestamp : new Date(event.timestamp)
-        if (isNaN(eventTime.getTime())) continue
-
-        if (this.deduplicator.isDuplicate({
-          provider: provider.name,
-          sessionId: event.sessionId,
-          timestamp: eventTime.toISOString(),
-          inputTokens: event.inputTokens,
-          outputTokens: event.outputTokens,
-          rawMessageId: (event as any).rawMessageId,
-          bubbleId: (event as any).bubbleId,
-          conversationId: (event as any).conversationId,
-          responseId: (event as any).responseId,
-        })) {
+          if (this.onEvent) {
+            this.onEvent(event)
+          }
+        } catch (err) {
+          logger.error({ provider: provider.name, filePath, err }, 'Error processing line, skipping')
           continue
-        }
-
-        const inserted = this.db.insertEvent(event)
-        if (inserted) {
-          this.updateSession(event)
-        }
-        this.deduplicator.record({
-          provider: provider.name,
-          sessionId: event.sessionId,
-          timestamp: eventTime.toISOString(),
-          inputTokens: event.inputTokens,
-          outputTokens: event.outputTokens,
-          cumulativeOutputTokens: (event as any).cumulativeOutputTokens,
-          rawMessageId: (event as any).rawMessageId,
-          bubbleId: (event as any).bubbleId,
-          conversationId: (event as any).conversationId,
-          responseId: (event as any).responseId,
-        })
-
-        if (this.onEvent) {
-          this.onEvent(event)
         }
       }
     }

@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
+import { logger } from './logger'
 
 const CACHE_DIR = path.join(os.homedir(), '.tokenwatch', 'cache')
 const PRICING_URL = 'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json'
@@ -8,22 +9,51 @@ const CACHE_FILE = path.join(CACHE_DIR, 'litellm-pricing.json')
 const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
 
 // Hardcoded fallbacks for critical models
+// All prices in $ per million tokens
 const FALLBACK_PRICING: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
+  // Claude 4.x
   'claude-opus-4-5': { input: 15, output: 75, cacheRead: 1.50, cacheWrite: 18.75 },
   'claude-opus-4-6': { input: 15, output: 75, cacheRead: 1.50, cacheWrite: 18.75 },
   'claude-sonnet-4-5': { input: 3, output: 15, cacheRead: 0.30, cacheWrite: 3.75 },
   'claude-sonnet-4-6': { input: 3, output: 15, cacheRead: 0.30, cacheWrite: 3.75 },
   'claude-haiku-4-5': { input: 0.80, output: 4, cacheRead: 0.08, cacheWrite: 1 },
   'claude-haiku-4-6': { input: 0.80, output: 4, cacheRead: 0.08, cacheWrite: 1 },
+  // Claude 3.5
+  'claude-3-5-sonnet': { input: 3, output: 15, cacheRead: 0.30, cacheWrite: 3.75 },
+  'claude-3-5-haiku': { input: 0.80, output: 4, cacheRead: 0.08, cacheWrite: 1 },
+  // Claude 3
+  'claude-3-opus': { input: 15, output: 75, cacheRead: 1.50, cacheWrite: 18.75 },
+  'claude-3-sonnet': { input: 3, output: 15, cacheRead: 0.30, cacheWrite: 3.75 },
+  'claude-3-haiku': { input: 0.25, output: 1.25, cacheRead: 0.03, cacheWrite: 0.30 },
+  // GPT-4o family
   'gpt-4o': { input: 2.50, output: 10, cacheRead: 1.25, cacheWrite: 10 },
   'gpt-4o-mini': { input: 0.15, output: 0.60, cacheRead: 0.075, cacheWrite: 0.60 },
+  'gpt-4-5-preview': { input: 5, output: 15, cacheRead: 2.50, cacheWrite: 15 },
+  'gpt-4-1': { input: 2, output: 8, cacheRead: 0.50, cacheWrite: 4 },
+  'gpt-4-1-mini': { input: 0.40, output: 1.60, cacheRead: 0.10, cacheWrite: 0.80 },
+  // GPT-5
   'gpt-5': { input: 1.25, output: 10, cacheRead: 0.125, cacheWrite: 1.25 },
   'gpt-5-mini': { input: 0.25, output: 2, cacheRead: 0.025, cacheWrite: 0.25 },
-  'gemini-2.5-pro': { input: 1.25, output: 10, cacheRead: 0.31, cacheWrite: 1.25 },
-  'gemini-2.5-flash': { input: 0.15, output: 3.50, cacheRead: 0.038, cacheWrite: 0.15 },
+  // o-series reasoning
   'o3': { input: 10, output: 40, cacheRead: 2.50, cacheWrite: 10 },
   'o3-mini': { input: 1.10, output: 4.40, cacheRead: 0.55, cacheWrite: 1.10 },
+  'o4': { input: 10, output: 40, cacheRead: 2.50, cacheWrite: 10 },
   'o4-mini': { input: 1.10, output: 4.40, cacheRead: 0.55, cacheWrite: 1.10 },
+  'o1': { input: 15, output: 60, cacheRead: 7.50, cacheWrite: 15 },
+  'o1-mini': { input: 3, output: 12, cacheRead: 1.50, cacheWrite: 3 },
+  // Gemini
+  'gemini-2.5-pro': { input: 1.25, output: 10, cacheRead: 0.31, cacheWrite: 1.25 },
+  'gemini-2.5-flash': { input: 0.15, output: 3.50, cacheRead: 0.038, cacheWrite: 0.15 },
+  'gemini-2.0-flash': { input: 0.10, output: 0.40, cacheRead: 0.025, cacheWrite: 0.10 },
+  'gemini-1.5-pro': { input: 3.50, output: 10.50, cacheRead: 0.88, cacheWrite: 3.50 },
+  'gemini-1.5-flash': { input: 0.075, output: 0.30, cacheRead: 0.019, cacheWrite: 0.075 },
+  // DeepSeek
+  'deepseek-chat': { input: 0.27, output: 1.10, cacheRead: 0.07, cacheWrite: 0.27 },
+  'deepseek-reasoner': { input: 0.55, output: 2.19, cacheRead: 0.14, cacheWrite: 0.55 },
+  // Mistral
+  'mistral-large': { input: 2, output: 6, cacheRead: 1, cacheWrite: 2 },
+  'mistral-small': { input: 0.20, output: 0.60, cacheRead: 0.10, cacheWrite: 0.20 },
+  'codestral': { input: 0.20, output: 0.60, cacheRead: 0.10, cacheWrite: 0.20 },
 }
 
 export interface ModelPrice {
@@ -140,6 +170,8 @@ export function getPriceForModel(model: string, aliases: Record<string, string> 
 
   const fallback = getFromFallback(resolved)
   if (fallback) return fallback
+
+  logger.warn({ model: resolved }, 'No pricing data for model, using default (sonnet pricing)')
 
   return { input: 3, output: 15, cacheRead: 0.30, cacheWrite: 3.75 }
 }
