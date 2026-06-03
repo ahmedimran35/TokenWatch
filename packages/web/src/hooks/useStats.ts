@@ -105,10 +105,7 @@ export function useAlertConfig() {
 export function useUpdateFromWebSocket() {
   const queryClient = useQueryClient()
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const authToken = import.meta.env.VITE_TOKENWATCH_AUTH_TOKEN || ''
-  const wsUrl = authToken
-    ? `${wsProtocol}//${window.location.host}/ws?token=${encodeURIComponent(authToken)}`
-    : `${wsProtocol}//${window.location.host}/ws`
+  const wsUrl = `${wsProtocol}//${window.location.host}/ws`
   const { lastMessage } = useWebSocket(wsUrl)
 
   useEffect(() => {

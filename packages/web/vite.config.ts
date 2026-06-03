@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { URL } from 'url'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -7,9 +8,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    define: {
-      'import.meta.env.VITE_TOKENWATCH_AUTH_TOKEN': JSON.stringify(authToken),
-    },
     server: {
       proxy: {
         '/api': {
@@ -25,6 +23,15 @@ export default defineConfig(({ mode }) => {
         '/ws': {
           target: 'ws://localhost:57821',
           ws: true,
+          configure: (proxy) => {
+            proxy.on('proxyReqWs', (proxyReq, _req, socket) => {
+              if (authToken) {
+                const url = new URL(proxyReq.path || '/', 'http://localhost')
+                url.searchParams.set('token', authToken)
+                proxyReq.path = url.pathname + url.search
+              }
+            })
+          },
         },
       },
     },

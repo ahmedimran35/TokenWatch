@@ -1,15 +1,8 @@
-#!/usr/bin/env node
-
 const { startApi } = require('./dist/src/index.js')
 
-async function main() {
-  console.log('Starting tokenwatch API server...')
-  await startApi({
-    port: 57821,
-    onReady: (port) => {
-      console.log(`API server running on http://localhost:${port}`)
-    }
-  })
-}
+const port = parseInt(process.env.TOKENWATCH_API_PORT || '57821', 10)
 
-main().catch(console.error)
+startApi({ port }).catch((err) => {
+  console.error('Failed to start API:', err)
+  process.exit(1)
+})
