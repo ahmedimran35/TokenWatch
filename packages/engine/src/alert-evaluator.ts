@@ -1,5 +1,6 @@
 import { Database } from './database'
 import type { Alert, AlertConfig } from '@tokenwatch/types'
+import { sendNotifications } from './notifier'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
@@ -111,7 +112,7 @@ export function evaluateAlerts(db: Database, config: AlertConfig): Alert[] {
     }
   }
 
-  // Insert triggered alerts
+  // Insert triggered alerts and send notifications
   for (const alert of alerts) {
     internalDb.prepare(
       `INSERT INTO alert_events (id, type, threshold, current_value, triggered_at, acknowledged, message)
@@ -125,6 +126,7 @@ export function evaluateAlerts(db: Database, config: AlertConfig): Alert[] {
       alert.acknowledged ? 1 : 0,
       alert.message
     )
+    sendNotifications(config, alert)
   }
 
   return alerts
@@ -150,6 +152,10 @@ export function loadAlertConfig(configPath?: string): AlertConfig {
       hourlyBudgetUsd: raw.hourlyBudgetUsd,
       burnRateSpikeMultiplier: raw.burnRateSpikeMultiplier ?? defaults.burnRateSpikeMultiplier,
       sessionBudgetUsd: raw.sessionBudgetUsd,
+      slackWebhookUrl: raw.slackWebhookUrl,
+      discordWebhookUrl: raw.discordWebhookUrl,
+      webhookUrl: raw.webhookUrl,
+      emailAddress: raw.emailAddress,
     }
   } catch {
     return defaults

@@ -82,6 +82,15 @@ export function useAlerts() {
   return useQuery({
     queryKey: ['alerts'],
     queryFn: () => fetchJson('/api/alerts'),
+    refetchInterval: 15000,
+  })
+}
+
+export function useBudgetUtilization() {
+  return useQuery({
+    queryKey: ['budgetUtilization'],
+    queryFn: () => fetchJson('/api/alerts/budget-utilization'),
+    refetchInterval: 15000,
   })
 }
 

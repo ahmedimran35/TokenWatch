@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useLiveStats, useProjects, useSessions, useModels, useCacheStats, useAlerts, useAlertConfig, useBurnRateHistory, useUpdateFromWebSocket, useOverviewStats, useTools, useShellCommands, useActivities, useForecast, useSessionEvents, useModelCompare, useOptimize, useYield } from './hooks/useStats'
+import { useLiveStats, useProjects, useSessions, useModels, useCacheStats, useAlerts, useAlertConfig, useBudgetUtilization, useBurnRateHistory, useUpdateFromWebSocket, useOverviewStats, useTools, useShellCommands, useActivities, useForecast, useSessionEvents, useModelCompare, useOptimize, useYield } from './hooks/useStats'
 import { LiveBurnRate } from './components/LiveBurnRate'
 import { DailyActivity } from './components/DailyActivity'
 import { ByActivity } from './components/ByActivity'
@@ -10,6 +10,7 @@ import { ProjectBreakdown } from './components/ProjectBreakdown'
 import { CacheStats } from './components/CacheStats'
 import { AlertBadge } from './components/AlertBadge'
 import { AlertsPanel } from './components/AlertsPanel'
+import { BudgetUtilization } from './components/BudgetUtilization'
 import { ConnectionStatus } from './components/ConnectionStatus'
 import { PeriodSelector } from './components/PeriodSelector'
 import { StatCard } from './components/StatCard'
@@ -33,6 +34,7 @@ function App() {
   const { data: liveData } = useLiveStats()
   const { data: alerts } = useAlerts()
   const { data: alertConfig } = useAlertConfig()
+  const { data: budgetUtilization } = useBudgetUtilization()
 
   const { from, to } = useMemo(() => {
     const now = new Date()
@@ -158,9 +160,10 @@ function App() {
         </div>
       )}
 
-      {/* Forecast */}
-      <div className="mb-3">
+      {/* Forecast + Budget */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
         <ForecastCard forecast={forecast as any} />
+        <BudgetUtilization data={budgetUtilization as any} />
       </div>
 
       {/* Daily Activity + By Project */}

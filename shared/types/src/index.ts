@@ -97,8 +97,17 @@ export interface AlertConfig {
   burnRateSpikeMultiplier?: number
   sessionBudgetUsd?: number
   slackWebhookUrl?: string
+  discordWebhookUrl?: string
   webhookUrl?: string
   emailAddress?: string
+}
+
+export interface BudgetUtilization {
+  daily: { budget: number; spent: number; remaining: number; percentage: number }
+  hourly: { budget: number; spent: number; remaining: number; percentage: number }
+  monthly: { budget: number; spent: number; remaining: number; percentage: number }
+  currentSession: { budget: number; spent: number; remaining: number; percentage: number } | null
+  projectedMonthEnd: number
 }
 
 export interface LiveStats {

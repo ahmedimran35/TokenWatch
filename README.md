@@ -32,6 +32,8 @@ A browser-based UI showing your live token spend, broken down by:
 - **Activities** — classified into Coding, Debugging, Exploration, etc.
 - **Tools** — which tools (Read, Write, Bash, etc.) are called most
 - **Cache** — how much you're saving from provider-side caching
+- **Budget Utilization** — real-time progress bars showing daily, hourly, monthly, and session budget consumption
+- **Notifications** — Slack, Discord, and generic webhook delivery when alerts trigger
 
 ### Burn Rate Monitoring
 
@@ -52,11 +54,15 @@ Three health insight modes that find wasted money:
 
 ### Alerts & Budgets
 
-Set daily or hourly budget limits. Get alerts for:
-- Daily spend exceeding a threshold
-- Hourly burn rate exceeding a threshold
-- Individual session costs exceeding a limit
+Set daily, hourly, or per-session budget limits. Get notifications delivered to Slack, Discord, or any webhook when:
+- Daily spend exceeds a threshold
+- Hourly burn rate exceeds a threshold
+- Individual session costs exceed a limit
 - Burn rate spikes (sudden 3x+ increase)
+
+The dashboard shows a **Budget Utilization** panel with real-time progress bars for every active budget, plus a projected month-end cost estimate.
+
+Configure alerts and notification channels from the gear icon in the dashboard header. No restart needed — changes take effect immediately.
 
 ### Session Timeline
 
@@ -246,6 +252,10 @@ Data is stored in `~/.tokenwatch/` directory with SQLite WAL mode for crash safe
 | `GET /api/models` | Yes | Model usage and cost breakdown |
 | `GET /api/cache` | Yes | Cache hit rate and savings stats |
 | `GET /api/alerts` | Yes | Active (unacknowledged) alerts |
+| `GET /api/alerts/config` | Yes | Get alert and budget configuration |
+| `PUT /api/alerts/config` | Yes | Update alert/budget/notification settings |
+| `POST /api/alerts/:id/acknowledge` | Yes | Acknowledge an alert |
+| `GET /api/alerts/budget-utilization` | Yes | Current budget usage with progress percentages |
 | `GET /api/export` | Yes | Export all data (stricter rate limit) |
 | `GET /api/health-insights/waste` | Yes | Context waste analysis report |
 | `GET /api/health-insights/zombies` | Yes | Idle/zombie session detection |
